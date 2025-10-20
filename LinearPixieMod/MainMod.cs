@@ -1,5 +1,5 @@
 global using Il2Cpp;
-using LinearPixieRole;
+using LinearPixieMod;
 using HarmonyLib;
 using Il2CppDissolveExample;
 using Il2CppInterop.Runtime;
@@ -12,10 +12,10 @@ using UnityEngine;
 using static Il2Cpp.Interop;
 using static Il2CppSystem.Array;
 
-[assembly: MelonInfo(typeof(MainMod), "LinearPixieMod", "1.0", "LinearPoint")]
+[assembly: MelonInfo(typeof(MainMod), "LinearPixieMod", "1.2", "LinearPoint")]
 [assembly: MelonGame("UmiArt", "Demon Bluff")]
 
-namespace LinearPixieRole;
+namespace LinearPixieMod;
 
 public class MainMod : MelonMod
 {
@@ -29,9 +29,9 @@ public class MainMod : MelonMod
         Pixie.role = new Pixie();
         Pixie.name = "Pixie";
         Pixie.description = "One random Minion is added to the Deck View.\nI have the abilities of an out of play Minion.";
-        Pixie.flavorText = "\"You should have seen the look on your faces after that one!\"";
-        Pixie.hints = "";
-        Pixie.ifLies = "A fake Minion is still added to the Deck View, but its abilities are not functioning.";
+        Pixie.flavorText = "\"She insists that all of her pranks are harmless. Yes, the poison was harmless!\"";
+        Pixie.hints = "If bluffed a fake Minion is still added to the Deck View, but its abilities are not functioning.";
+        Pixie.ifLies = "";
         Pixie.picking = false;
         Pixie.startingAlignment = EAlignment.Good;
         Pixie.type = ECharacterType.Outcast;
@@ -41,16 +41,16 @@ public class MainMod : MelonMod
         Pixie.cardBgColor = new Color(0.102f, 0.0667f, 0.0392f);
         Pixie.cardBorderColor = new Color(0.7843f, 0.6471f, 0f);
         Pixie.color = new Color(0.9659f, 1f, 0.4472f);
-        Characters.Instance.startGameActOrder = insertAfterAct("Baa", Pixie);
+        Characters.Instance.startGameActOrder = InsertAfterAct("Pooka", Pixie);
 
         AscensionsData advancedAscension = ProjectContext.Instance.gameData.advancedAscension;
         foreach (CustomScriptData scriptData in advancedAscension.possibleScriptsData)
         {
             ScriptInfo script = scriptData.scriptInfo;
-            addRole(script.startingOutsiders, Pixie);
+            AddRole(script.startingOutsiders, Pixie);
         }
     }
-    public void addRole(Il2CppSystem.Collections.Generic.List<CharacterData> list, CharacterData data)
+    public void AddRole(Il2CppSystem.Collections.Generic.List<CharacterData> list, CharacterData data)
     {
         if (list.Contains(data))
         {
@@ -74,7 +74,7 @@ public class MainMod : MelonMod
             }
         }
     }
-    public CharacterData[] insertAfterAct(string previous, CharacterData data)
+    public CharacterData[] InsertAfterAct(string previous, CharacterData data)
     {
         CharacterData[] actList = Characters.Instance.startGameActOrder;
         int actSize = actList.Length;
@@ -101,5 +101,39 @@ public class MainMod : MelonMod
             LoggerInstance.Msg("");
         }
         return newActList;
+    }
+    // Codeblock provided by github.com/carlz54339
+    public static class PixieRole
+    {
+        [HarmonyPatch(typeof(Minion), nameof(Minion.GetBluffIfAble))]
+        [HarmonyPatch(typeof(Baron), nameof(Baron.SitNextToOutsider))]
+        public static class pvc
+        {
+            public static void Postfix(Minion __instance, ref CharacterData __result, Character charRef)
+            {
+                if (__result.name == "Pixie")
+                {
+                    __result.role.BluffAct(ETriggerPhase.Start, charRef);
+                }
+            }
+        }
+        public static void Postfix(Baron __instance, Character charRef)
+        {
+            if(charRef.dataRef.name == "Pixie")
+            {
+                Il2CppSystem.Collections.Generic.List<Character> outsiders = new Il2CppSystem.Collections.Generic.List<Character>(Gameplay.CurrentCharacters.Pointer);
+                outsiders.Remove(charRef);
+                outsiders = Characters.Instance.FilterCharacterType(outsiders, ECharacterType.Outcast);
+
+                Character pickedOutsider = outsiders[UnityEngine.Random.Range(0, outsiders.Count)];
+                pickedOutsider.statuses.AddStatus(ECharacterStatus.MessedUpByEvil, charRef);
+
+                Il2CppSystem.Collections.Generic.List<Character> adjacentCharacters = Characters.Instance.GetAdjacentAliveCharacters(pickedOutsider);
+                Character pickedSwapCharacter = adjacentCharacters[UnityEngine.Random.Range(0, adjacentCharacters.Count)];
+                CharacterData pickedData = pickedSwapCharacter.dataRef;
+                pickedSwapCharacter.Init(charRef.dataRef);
+                charRef.Init(pickedData);
+            }
+        }
     }
 }

@@ -8,11 +8,12 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace LinearPixieRole;
+namespace LinearPixieMod;
 
 [RegisterTypeInIl2Cpp]
 public class Pixie : Role
-{   
+{
+    public CharacterData fakeMinion = GetGenericMinion();
     public override ActedInfo GetInfo(Character charRef)
     {
         return new ActedInfo("", null);
@@ -32,28 +33,40 @@ public class Pixie : Role
     {
         if (trigger == ETriggerPhase.Start)
         {
-            charRef.statuses.statuses.Add(ECharacterStatus.HealthyBluff);
             Gameplay gameplay = Gameplay.Instance;
             Characters instance = Characters.Instance;
             Il2CppSystem.Collections.Generic.List<CharacterData> lista = gameplay.GetAscensionAllStartingCharacters();
             Il2CppSystem.Collections.Generic.List<CharacterData> listb = instance.FilterNotInDeckCharactersUnique(lista);
             Il2CppSystem.Collections.Generic.List<CharacterData> listFin = instance.FilterRealCharacterType(listb, ECharacterType.Minion);
             if (listFin == null || listFin.Count == 0)
-            {
                 return;
-            }
 
-            CharacterData chosenMinion = listFin[UnityEngine.Random.RandomRangeInt(0, listFin.Count)];
-            gameplay.AddScriptCharacter(ECharacterType.Minion, chosenMinion);
+            fakeMinion = listFin[UnityEngine.Random.RandomRangeInt(0, listFin.Count)];
+            gameplay.AddScriptCharacter(ECharacterType.Minion, fakeMinion);
 
-            chosenMinion.role.Act(trigger, charRef);
+            if (charRef.GetCharacterType() != ECharacterType.Minion)
+                fakeMinion.role.Act(trigger, charRef);
         }
+    }
+    public override void ActOnDied(Character charRef)
+    {
+        if (charRef.GetCharacterType() != ECharacterType.Minion)
+            fakeMinion.role.ActOnDied(charRef);
+
+    }
+    public static CharacterData GetGenericMinion()
+    {
+        AscensionsData allCharactersAscension = ProjectContext.Instance.gameData.allCharactersAscension;
+        for (int i = 0; i < allCharactersAscension.startingMinions.Length; i++)
+        {
+            if (allCharactersAscension.startingMinions[i].name == "Minion")
+                return allCharactersAscension.startingMinions[i];
+        }
+        return allCharactersAscension.startingMinions[0];
     }
     public Pixie() : base(ClassInjector.DerivedConstructorPointer<Pixie>())
     {
         ClassInjector.DerivedConstructorBody((Il2CppObjectBase)this);
     }
-    public Pixie(IntPtr ptr) : base(ptr)
-    {
-    }
+    public Pixie(IntPtr ptr) : base(ptr){}
 }

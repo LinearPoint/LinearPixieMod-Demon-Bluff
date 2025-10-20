@@ -12,7 +12,7 @@ using UnityEngine;
 using static Il2Cpp.Interop;
 using static Il2CppSystem.Array;
 
-[assembly: MelonInfo(typeof(MainMod), "LinearPixieMod", "1.2", "LinearPoint")]
+[assembly: MelonInfo(typeof(MainMod), "LinearPixieMod", "1.2.1", "LinearPoint")]
 [assembly: MelonGame("UmiArt", "Demon Bluff")]
 
 namespace LinearPixieMod;
@@ -101,39 +101,5 @@ public class MainMod : MelonMod
             LoggerInstance.Msg("");
         }
         return newActList;
-    }
-    // Codeblock provided by github.com/carlz54339
-    public static class PixieRole
-    {
-        [HarmonyPatch(typeof(Minion), nameof(Minion.GetBluffIfAble))]
-        [HarmonyPatch(typeof(Baron), nameof(Baron.SitNextToOutsider))]
-        public static class pvc
-        {
-            public static void Postfix(Minion __instance, ref CharacterData __result, Character charRef)
-            {
-                if (__result.name == "Pixie")
-                {
-                    __result.role.BluffAct(ETriggerPhase.Start, charRef);
-                }
-            }
-        }
-        public static void Postfix(Baron __instance, Character charRef)
-        {
-            if(charRef.dataRef.name == "Pixie")
-            {
-                Il2CppSystem.Collections.Generic.List<Character> outsiders = new Il2CppSystem.Collections.Generic.List<Character>(Gameplay.CurrentCharacters.Pointer);
-                outsiders.Remove(charRef);
-                outsiders = Characters.Instance.FilterCharacterType(outsiders, ECharacterType.Outcast);
-
-                Character pickedOutsider = outsiders[UnityEngine.Random.Range(0, outsiders.Count)];
-                pickedOutsider.statuses.AddStatus(ECharacterStatus.MessedUpByEvil, charRef);
-
-                Il2CppSystem.Collections.Generic.List<Character> adjacentCharacters = Characters.Instance.GetAdjacentAliveCharacters(pickedOutsider);
-                Character pickedSwapCharacter = adjacentCharacters[UnityEngine.Random.Range(0, adjacentCharacters.Count)];
-                CharacterData pickedData = pickedSwapCharacter.dataRef;
-                pickedSwapCharacter.Init(charRef.dataRef);
-                charRef.Init(pickedData);
-            }
-        }
     }
 }
